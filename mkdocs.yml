@@ -1,0 +1,47 @@
+site_name: ""
+site_url: http://localhost.iatdc.com
+site_dir: ~/code/bitbucket/iatdc/blog/
+
+theme:
+  name: material
+  font:
+    text: Roboto
+  palette:
+    scheme: default
+    primary: white
+    accent: blue
+  features:
+    - navigation.sections
+    - navigation.indexes
+  custom_dir: docs/assets
+  logo: images/iatdc-logo.png
+  favicon: images/favicon.png
+
+plugins:
+  - search
+  - macros
+  - blog:
+      blog_dir: .
+
+nav:
+  - index.md
+   
+extra_css:
+  - stylesheets/extra.css
+  
+extra:
+  homepage: http://localhost.iatdc.com
+  images: ../assets/images
+  social:
+    - icon: fontawesome/brands/twitter
+      link: ""
+    - icon: fontawesome/brands/facebook
+      link: ""
+    - icon: fontawesome/brands/linkedin
+      link: ""
+    - icon: fontawesome/brands/youtube
+      link: ""
+
+use_directory_urls: false
+
+copyright: Copyright &copy; IATDC 2026. All rights reserved.

@@ -1,0 +1,65 @@
+backend:
+  name: github
+  repo: mwalikar15/mkdocs-blog-iatdc              # ✅ Your GitHub repo
+  branch: main                                    # ← or "master" depending on your default branch
+  base_url: http://localhost:8081                 # ← For local dev; replace with your OAuth proxy URL for production
+
+# Media / image uploads
+media_folder: "docs/assets/images"
+public_folder: "/assets/images"
+
+# ─────────────────────────────────────────────
+# Collections — maps to docs/posts/*.md
+# ─────────────────────────────────────────────
+collections:
+  - name: "posts"
+    label: "Blog Posts"
+    label_singular: "Blog Post"
+    folder: "docs/posts"
+    create: true
+    slug: "{{fields.slug}}"
+    extension: "md"
+    format: "frontmatter"
+    summary: "{{fields.slug}} ({{fields.date_created}})"
+    fields:
+      - label: "Title"
+        name: "title"
+        widget: "string"
+        hint: "Post heading — will appear as # H1 in the document body"
+
+      - label: "Date Created"
+        name: "date_created"
+        widget: "datetime"
+        format: "YYYY-MM-DD"
+        date_format: "YYYY-MM-DD"
+        time_format: false
+        hint: "Publication date (maps to date.created in MkDocs frontmatter)"
+
+      - label: "Read Time (minutes)"
+        name: "readtime"
+        widget: "number"
+        default: 5
+        value_type: "int"
+        min: 1
+        max: 120
+
+      - label: "URL Slug"
+        name: "slug"
+        widget: "string"
+        hint: "URL-friendly identifier, e.g. my-first-blog-post (no spaces)"
+        pattern: ['^[a-z0-9-]+$', "Only lowercase letters, numbers and hyphens allowed"]
+
+      - label: "Hide Sidebar Navigation"
+        name: "hide_navigation"
+        widget: "boolean"
+        default: true
+
+      - label: "Hide Table of Contents"
+        name: "hide_toc"
+        widget: "boolean"
+        default: true
+
+      - label: "Body"
+        name: "body"
+        widget: "markdown"
+        hint: "Write your post content here. Use <!-- more --> to set the excerpt break."
