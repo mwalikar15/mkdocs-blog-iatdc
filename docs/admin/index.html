@@ -6,7 +6,116 @@
     <title>IATDC Blog - Content Manager</title>
   </head>
   <body>
-    <!-- Decap CMS - https://decapcms.org -->
+
+    <!--
+      Auth Bridge — MUST be before the Decap CMS script.
+
+      Problem: Decap CMS v3 checks event.origin === base_url (localhost:8081).
+      A self-postMessage from index.html has origin localhost:8000 → REJECTED.
+
+      Solution: Load a hidden iframe from localhost:8081/bridge.
+      When the iframe calls window.parent.postMessage(), event.origin is
+      'http://localhost:8081' — exactly what Decap CMS expects ✅
+    -->
+    <script>
+      (function () {
+        var PROXY_ORIGIN = 'http://localhost:8081';
+        var bridgeReady = false;
+        var pendingAuthMessage = null;
+        var bridgeIframe = null;
+
+        // ── Step 1: Create hidden bridge iframe from localhost:8081 ──────
+        function createBridgeIframe() {
+          var iframe = document.createElement('iframe');
+          iframe.src = PROXY_ORIGIN + '/bridge';
+          iframe.id = 'decap-auth-bridge';
+          iframe.style.cssText = 'display:none;width:0;height:0;border:0';
+          document.body.appendChild(iframe);
+          bridgeIframe = iframe;
+          console.log('[auth-bridge] Bridge iframe created from', PROXY_ORIGIN);
+        }
+
+        // ── Step 2: Listen for messages from the bridge iframe ───────────
+        window.addEventListener('message', function (e) {
+          // Bridge iframe signals it is ready
+          if (e.origin === PROXY_ORIGIN && e.data && e.data.action === 'bridge-ready') {
+            bridgeReady = true;
+            console.log('[auth-bridge] Bridge iframe ready ✅');
+            // Send any token that arrived before the iframe was ready
+            if (pendingAuthMessage) {
+              sendToBridge(pendingAuthMessage);
+              pendingAuthMessage = null;
+            }
+          }
+        });
+
+        // ── Step 3: Send token to iframe so it can forward with correct origin
+        function sendToBridge(message) {
+          if (!bridgeIframe || !bridgeReady) {
+            console.log('[auth-bridge] Bridge not ready yet, queuing message...');
+            pendingAuthMessage = message;
+            return;
+          }
+          bridgeIframe.contentWindow.postMessage(
+            { action: 'decap-auth-forward', message: message },
+            PROXY_ORIGIN
+          );
+          console.log('[auth-bridge] ✅ Token sent to bridge iframe');
+        }
+
+        // ── Step 4: Listen for token from auth-complete.html ─────────────
+        try {
+          var bc = new BroadcastChannel('decap_cms_auth');
+          bc.onmessage = function (event) {
+            console.log('[auth-bridge] Received token via BroadcastChannel');
+            bc.close();
+
+            var provider = event.data.provider || 'github';
+
+            // Step 4a: Send handshake message "authorizing:github" first
+            // Decap CMS requires Netlify handshake before listening for success!
+            console.log('[auth-bridge] Sending handshake "authorizing:' + provider + '"...');
+            sendToBridge('authorizing:' + provider);
+
+            // Step 4b: Send token success payload after handshake is processed
+            setTimeout(function () {
+              var message = 'authorization:' + provider + ':success:' + JSON.stringify({
+                token: event.data.token,
+                provider: provider
+              });
+              console.log('[auth-bridge] Sending success token payload...');
+              sendToBridge(message);
+            }, 100);
+
+            // Send ack to popup after 800ms so it stays open until bridge delivers
+            setTimeout(function () {
+              try {
+                var ack = new BroadcastChannel('decap_cms_auth_ack');
+                ack.postMessage({ status: 'ok' });
+                ack.close();
+                console.log('[auth-bridge] Ack sent — popup will close');
+              } catch (e) {}
+            }, 800);
+          };
+          console.log('[auth-bridge] Listening on BroadcastChannel: decap_cms_auth');
+        } catch (e) {
+          console.warn('[auth-bridge] BroadcastChannel not supported');
+        }
+
+        // Initialize the bridge iframe
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', createBridgeIframe);
+        } else {
+          createBridgeIframe();
+        }
+
+      })();
+    </script>
+
+
+    <!-- Decap CMS — loads after the auth bridge is registered -->
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+
   </body>
 </html>
+
