@@ -1,6 +1,8 @@
 site_name: ""
 site_url: http://localhost.iatdc.com
-site_dir: ~/code/bitbucket/iatdc/blog/
+site_dir: /home/manju/code/gitlab/iatdc/blog
+exclude_docs: |
+  /docs/admin/config.yml
 
 theme:
   name: material

@@ -41,7 +41,8 @@
 
   <script>
     (function () {
-      var PROXY = 'http://localhost:8081';
+      var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      var PROXY = isLocal ? 'http://localhost:8081' : window.location.origin + '/oauth';
       var msgEl = document.getElementById('msg');
       var spinner = document.getElementById('spinner');
 
